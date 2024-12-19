@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0"
+		/>
+		<link
+			rel="stylesheet"
+			href="main.css"
+		/>
+		<link
+			rel="preconnect"
+			href="https://fonts.googleapis.com"
+		/>
+		<link
+			rel="preconnect"
+			href="https://fonts.gstatic.com"
+			crossorigin
+		/>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Charm:wght@400;700&family=Rancho&family=Satisfy&display=swap"
+			rel="stylesheet"
+		/>
+		<title>Document</title>
+	</head>
+	<body>
+		<h1>Echoverse</h1>
+		<div class="player">
+			<div class="progress-container">
+				<div
+					class="time"
+					id="currentTime"
+				>
+					0:00
+				</div>
+				<div
+					class="progress-bar"
+					id="progressBar"
+				>
+					<div
+						class="progress"
+						id="progress"
+					></div>
+					<div
+						class="progress-dot"
+						id="progressDot"
+					></div>
+				</div>
+				<div
+					class="time"
+					id="duration"
+				>
+					0:00
+				</div>
+			</div>
+			<audio
+				id="audio"
+				src="audios/Priyakara_Song_-_YZ(256k).mp3"
+			></audio>
+			<br />
+			<div class="controls">
+				<button
+					id="backBtn"
+					title="Back"
+				>
+					&#9194;
+				</button>
+				<!-- Back Icon -->
+				<button
+					id="playPauseBtn"
+					title="Play/Pause"
+				>
+					&#9654;
+				</button>
+				<!-- Play Icon -->
+				<button
+					id="nextBtn"
+					title="Next"
+				>
+					&#9193;
+				</button>
+				<!-- Next Icon -->
+			</div>
+		</div>
+		<script>
+			const playPauseBtn = document.getElementById('playPauseBtn');
+			const backBtn = document.getElementById('backBtn');
+			const nextBtn = document.getElementById('nextBtn');
+			const audio = document.getElementById('audio');
+			const progress = document.getElementById('progress');
+			const currentTimeDisplay = document.getElementById('currentTime');
+			const durationDisplay = document.getElementById('duration');
+
+			let isPlaying = false;
+			const apiKey = '41ca86ed6f56a27da1f68592547be1e7'; // Replace with your Jamendo API key
+
+			// Fetch a random song from Jamendo API
+			async function fetchRandomSong() {
+				try {
+					const response = await fetch(
+						`https://api.jamendo.com/v3.0/tracks/?client_id=${apiKey}&limit=1&order=random`
+					);
+					const data = await response.json();
+
+					if (data.results.length > 0) {
+						const track = data.results[0];
+						audio.src = track.audio; // Set the audio source to the fetched song
+
+						// Wait until the audio is ready to play
+						audio.addEventListener('canplaythrough', () => {
+							audio.play(); // Start playing the song once it's ready
+							playPauseBtn.innerHTML = '&#10074;&#10074;'; // Pause icon
+							isPlaying = true;
+						});
+					} else {
+						console.error('No tracks found');
+					}
+				} catch (error) {
+					console.error('Error fetching random song:', error);
+				}
+			}
+
+			// Play/Pause button functionality
+			playPauseBtn.addEventListener('click', () => {
+				if (isPlaying) {
+					audio.pause();
+					playPauseBtn.innerHTML = '&#9654;'; // Play icon
+				} else {
+					if (audio.src === '') {
+						fetchRandomSong(); // If no song is loaded, fetch a random one
+					} else {
+						audio.play();
+						playPauseBtn.innerHTML = '&#10074;&#10074;'; // Pause icon
+					}
+				}
+				isPlaying = !isPlaying;
+			});
+
+			// Back button functionality (rewind 5 seconds)
+			backBtn.addEventListener('click', () => {
+				audio.currentTime = Math.max(audio.currentTime - 5, 0);
+			});
+
+			// Next button functionality (fetch and play a new random song)
+			nextBtn.addEventListener('click', () => {
+				fetchRandomSong(); // Fetch a new random song when Next is clicked
+			});
+
+			// Update progress bar and time
+			audio.addEventListener('timeupdate', () => {
+				const currentTime = audio.currentTime;
+				const duration = audio.duration;
+				progress.style.width = `${(currentTime / duration) * 100}%`;
+				progressDot.style.left = `${(currentTime / duration) * 90}%`;
+				currentTimeDisplay.textContent = formatTime(currentTime);
+				durationDisplay.textContent = formatTime(duration);
+			});
+
+			// Format time to mm:ss
+			function formatTime(time) {
+				if (isNaN(time)) return '0:00';
+				const minutes = Math.floor(time / 60);
+				const seconds = Math.floor(time % 60)
+					.toString()
+					.padStart(2, '0');
+				return `${minutes}:${seconds}`;
+			}
+			progressBar.addEventListener('click', (e) => {
+				const progressBarWidth = progressBar.offsetWidth;
+				const clickPosition = e.offsetX; // The position where the user clicked
+				const newTime = (clickPosition / progressBarWidth) * audio.duration;
+				audio.currentTime = newTime;
+			});
+
+			// Initial fetch when the page loads
+			fetchRandomSong();
+		</script>
+	</body>
+</html>
